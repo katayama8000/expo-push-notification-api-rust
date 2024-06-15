@@ -1,0 +1,15 @@
+[package]
+name = "expo-push-notification-api-rust"
+authors = ["katayama8000 <tattu.0310@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["macros"] }
+serde_json = { version = "1", features = ["raw_value"] }
+vercel_runtime = { version = "1.1.0" }
+expo_push_notification_client = "0.3.3"
+
+[[bin]]
+name = "handler"
+path = "api/handler.rs"
