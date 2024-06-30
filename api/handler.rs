@@ -8,22 +8,38 @@ async fn main() -> Result<(), Error> {
 }
 
 pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
+    println!("this is a expo push notification api");
+
     // Initialize Expo client
     let expo = Expo::new(ExpoClientOptions {
-        access_token: None,
-        use_fcm_v1: None,
-        base_url: None,
+        ..Default::default()
     });
 
-    // Process request body if needed
-    let _body = req.body(); // Placeholder: process the body as needed
+    if req.method() != "POST" {
+        return Ok(Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .header("Content-Type", "application/json")
+            .body(
+                json!({
+                    "error": "Only POST requests are allowed"
+                })
+                .to_string()
+                .into(),
+            )?);
+    }
+
+    // exstract title and body from the request
+    let body = req.body();
+    println!("Request body1: {:?}", body);
+    println!("Request body2: {:?}", body);
 
     // Expo push tokens (example token used here)
+    // get this token from the body of the request
     let expo_push_tokens = ["ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"];
 
     // Build the push message
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
-        .title("Test Notification")
+        .title("Test ")
         .body("This is a test notification")
         .build()
         .map_err(|e| Error::from(e))?;
