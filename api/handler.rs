@@ -1,5 +1,5 @@
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage};
-use serde_json::json;
+use serde_json::{json, Value};
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 
 #[tokio::main]
@@ -10,7 +10,6 @@ async fn main() -> Result<(), Error> {
 pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     println!("this is a expo push notification api");
 
-    // Initialize Expo client
     let expo = Expo::new(ExpoClientOptions {
         ..Default::default()
     });
@@ -28,23 +27,22 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
             )?);
     }
 
-    // exstract title and body from the request
+    let mut expo_push_tokens = vec![];
+
     let body = req.body();
-    println!("Request body1: {:?}", body);
-    println!("Request body2: {:?}", body);
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    let json_body: Value = serde_json::from_str(&body_str).map_err(|e| Error::from(e))?;
 
-    // Expo push tokens (example token used here)
-    // get this token from the body of the request
-    let expo_push_tokens = ["ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"];
+    let title = json_body["title"].as_str().unwrap_or("N/A");
+    let body = json_body["body"].as_str().unwrap_or("N/A");
+    expo_push_tokens.push(json_body["expo_push_token"].as_str().unwrap_or("N/A"));
 
-    // Build the push message
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
-        .title("Test ")
-        .body("This is a test notification")
+        .title(title)
+        .body(body)
         .build()
         .map_err(|e| Error::from(e))?;
 
-    // Send push notifications
     match expo.send_push_notifications(expo_push_message).await {
         Ok(_ret) => Ok(Response::builder()
             .status(StatusCode::OK)
