@@ -33,10 +33,11 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let body_str = String::from_utf8(body.to_vec()).map_err(|e| Error::from(e))?;
     let json_body: Value = serde_json::from_str(&body_str).map_err(|e| Error::from(e))?;
 
-    let title = json_body["title"].as_str().map_err(|e| Error::from(e))?;
-    let body = json_body["body"].as_str().map_err(|e| Error::from(e))?;
-    expo_push_tokens.push(json_body["expo_push_token"].as_str()
-        .map_err(|e| Error::from(e))?;
+    let title = json_body["title"].as_str().unwrap_or("N/A");
+    let body = json_body["body"].as_str().unwrap_or("N/A");
+    if let Some(tokens) = json_body["expo_push_tokens"].as_str() {
+        expo_push_tokens.push(tokens);
+    }
 
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
