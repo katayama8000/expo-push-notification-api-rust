@@ -307,9 +307,9 @@ dependencies = [
 
 [[package]]
 name = "expo_push_notification_client"
-version = "0.3.3"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43e283915100e8e0b7dfaf14348afd984eac51da526cc0446b745bdc82055cf5"
+checksum = "1fcab942adc36a06c5777bbb2d42218d2ae5156151cccc3ccdcc7257185bcbe2"
 dependencies = [
  "async-compression",
  "regex",
