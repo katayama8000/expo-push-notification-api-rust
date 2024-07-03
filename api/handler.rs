@@ -30,12 +30,13 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let mut expo_push_tokens = vec![];
 
     let body = req.body();
-    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    let body_str = String::from_utf8(body.to_vec()).map_err(|e| Error::from(e))?;
     let json_body: Value = serde_json::from_str(&body_str).map_err(|e| Error::from(e))?;
 
-    let title = json_body["title"].as_str().unwrap_or("N/A");
-    let body = json_body["body"].as_str().unwrap_or("N/A");
-    expo_push_tokens.push(json_body["expo_push_token"].as_str().unwrap_or("N/A"));
+    let title = json_body["title"].as_str().map_err(|e| Error::from(e))?;
+    let body = json_body["body"].as_str().map_err(|e| Error::from(e))?;
+    expo_push_tokens.push(json_body["expo_push_token"].as_str()
+        .map_err(|e| Error::from(e))?;
 
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
