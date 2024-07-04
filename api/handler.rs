@@ -1,6 +1,25 @@
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage};
 use serde_json::{json, Value};
+use supabase_rs::SupabaseClient;
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
+
+use dotenv::dotenv;
+use std::env::var;
+
+async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
+    dotenv().ok(); // Load the .env file
+
+    let supabase_url = var("SUPABASE_URL").map_err(|e| {
+        eprintln!("Error loading SUPABASE_URL: {:?}", e);
+        Error::from(e)
+    })?;
+    let supabase_key = var("SUPABASE_KEY").map_err(|e| {
+        eprintln!("Error loading SUPABASE_KEY: {:?}", e);
+        Error::from(e)
+    })?;
+
+    Ok(SupabaseClient::new(supabase_url, supabase_key))
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -8,34 +27,41 @@ async fn main() -> Result<(), Error> {
 }
 
 pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
-    println!("this is a expo push notification api");
+    println!("This is an Expo push notification API");
 
-    let expo = Expo::new(ExpoClientOptions {
-        ..Default::default()
-    });
-
-    if req.method() != "POST" {
-        return Ok(Response::builder()
-            .status(StatusCode::BAD_REQUEST)
-            .header("Content-Type", "application/json")
-            .body(
-                json!({
-                    "error": "Only POST requests are allowed"
-                })
-                .to_string()
-                .into(),
-            )?);
-    }
+    let expo = Expo::new(ExpoClientOptions::default());
 
     let mut expo_push_tokens = vec![];
 
+    let supabase_client = initialize_supabase_client().await?;
+    let response = supabase_client
+        .select("dev_users")
+        .execute()
+        .await
+        .map_err(|e| {
+            eprintln!("Error fetching dev_users: {:?}", e);
+            Error::from(e)
+        })?;
+
+    expo_push_tokens = response
+        .iter()
+        .filter_map(|row| row["expo_push_token"].as_str())
+        .collect();
+
     let body = req.body();
-    let body_str = String::from_utf8(body.to_vec()).map_err(|e| Error::from(e))?;
-    let json_body: Value = serde_json::from_str(&body_str).map_err(|e| Error::from(e))?;
+    let body_str = String::from_utf8(body.to_vec()).map_err(|e| {
+        eprintln!("Error converting body to string: {:?}", e);
+        Error::from(e)
+    })?;
+    let json_body: Value = serde_json::from_str(&body_str).map_err(|e| {
+        eprintln!("Error parsing JSON body: {:?}", e);
+        Error::from(e)
+    })?;
 
     let title = json_body["title"].as_str().unwrap_or("N/A");
     let body = json_body["body"].as_str().unwrap_or("N/A");
-    if let Some(tokens) = json_body["expo_push_tokens"].as_str() {
+
+    if let Some(tokens) = json_body["expo_push_token"].as_str() {
         expo_push_tokens.push(tokens);
     }
 
