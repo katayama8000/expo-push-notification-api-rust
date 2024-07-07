@@ -1,0 +1,1 @@
+curl -X GET https://expo-push-notification-api-rust.vercel.app/api/handler
