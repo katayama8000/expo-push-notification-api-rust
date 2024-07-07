@@ -1,6 +1,51 @@
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage};
 use serde_json::{json, Value};
+use supabase_rs::SupabaseClient;
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
+
+use dotenv::dotenv;
+use std::env::var;
+
+async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
+    dotenv().ok();
+
+    let supabase_url = var("SUPABASE_URL").map_err(|e| {
+        eprintln!("Error loading SUPABASE_URL: {:?}", e);
+        Error::from(e)
+    })?;
+    let supabase_key = var("SUPABASE_KEY").map_err(|e| {
+        eprintln!("Error loading SUPABASE_KEY: {:?}", e);
+        Error::from(e)
+    })?;
+
+    Ok(SupabaseClient::new(supabase_url, supabase_key))
+}
+
+async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, Error> {
+    let response = client.select("dev_users").execute().await.map_err(|e| {
+        eprintln!("Error fetching dev_users: {:?}", e);
+        Error::from(e)
+    })?;
+
+    let tokens = response
+        .iter()
+        .filter_map(|row| row["expo_push_token"].as_str().map(|s| s.to_string()))
+        .collect::<Vec<String>>();
+
+    Ok(tokens)
+}
+
+async fn extract_body(req: &Request) -> Result<Value, Error> {
+    let body_str = String::from_utf8(req.body().to_vec()).map_err(|e| {
+        eprintln!("Error converting body to string: {:?}", e);
+        Error::from(e)
+    })?;
+    let json_body: Value = serde_json::from_str(&body_str).map_err(|e| {
+        eprintln!("Error parsing JSON body: {:?}", e);
+        Error::from(e)
+    })?;
+    Ok(json_body)
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -8,45 +53,37 @@ async fn main() -> Result<(), Error> {
 }
 
 pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
-    println!("this is a expo push notification api");
+    println!("This is an Expo push notification API");
 
-    let expo = Expo::new(ExpoClientOptions {
-        ..Default::default()
-    });
+    let expo = Expo::new(ExpoClientOptions::default());
 
-    if req.method() != "POST" {
-        return Ok(Response::builder()
-            .status(StatusCode::BAD_REQUEST)
-            .header("Content-Type", "application/json")
-            .body(
-                json!({
-                    "error": "Only POST requests are allowed"
-                })
-                .to_string()
-                .into(),
-            )?);
-    }
-
+    let mut title = "25日だよ".to_string();
+    let mut body = "パートナーに請求しよう".to_string();
     let mut expo_push_tokens = vec![];
 
-    let body = req.body();
-    let body_str = String::from_utf8(body.to_vec()).map_err(|e| Error::from(e))?;
-    let json_body: Value = serde_json::from_str(&body_str).map_err(|e| Error::from(e))?;
+    if req.method() == "GET" {
+        let supabase_client = initialize_supabase_client().await?;
+        expo_push_tokens = fetch_expo_push_tokens(&supabase_client).await?;
+    }
 
-    let title = json_body["title"].as_str().unwrap_or("N/A");
-    let body = json_body["body"].as_str().unwrap_or("N/A");
-    if let Some(tokens) = json_body["expo_push_tokens"].as_str() {
-        expo_push_tokens.push(tokens);
+    if req.method() == "POST" {
+        let json_body = extract_body(&req).await?;
+        title = json_body["title"].to_string();
+        body = json_body["body"].to_string();
+
+        if let Some(token) = json_body["expo_push_token"].as_str() {
+            expo_push_tokens.push(token.to_string());
+        }
     }
 
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
         .body(body)
         .build()
-        .map_err(|e| Error::from(e))?;
+        .map_err(Error::from)?;
 
     match expo.send_push_notifications(expo_push_message).await {
-        Ok(_ret) => Ok(Response::builder()
+        Ok(_) => Ok(Response::builder()
             .status(StatusCode::OK)
             .header("Content-Type", "application/json")
             .body(
@@ -56,7 +93,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 .to_string()
                 .into(),
             )?),
-        Err(_e) => Ok(Response::builder()
+        Err(_) => Ok(Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .header("Content-Type", "application/json")
             .body(
