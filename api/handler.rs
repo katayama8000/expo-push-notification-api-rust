@@ -5,6 +5,7 @@ use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 
 use dotenv::dotenv;
 use std::env::var;
+use tracing::{error, info};
 
 async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
     dotenv().ok();
@@ -31,7 +32,7 @@ async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, 
         .iter()
         .filter_map(|row| row["expo_push_token"].as_str().map(|s| s.to_string()))
         .collect::<Vec<String>>();
-
+    info!("Fetched {} expo push tokens", tokens.len());
     Ok(tokens)
 }
 
@@ -70,6 +71,9 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
         let json_body = extract_body(&req).await?;
         title = json_body["title"].to_string();
         body = json_body["body"].to_string();
+        info!("Title: {}", title);
+        info!("Body: {}", body);
+        info!("expo_push_token: {:?}", json_body["expo_push_token"]);
 
         if let Some(token) = json_body["expo_push_token"].as_str() {
             expo_push_tokens.push(token.to_string());
@@ -93,15 +97,18 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 .to_string()
                 .into(),
             )?),
-        Err(_) => Ok(Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .header("Content-Type", "application/json")
-            .body(
-                json!({
-                    "error": "Failed to send push notification"
-                })
-                .to_string()
-                .into(),
-            )?),
+        Err(e) => {
+            error!("Failed to send push notification, {:?}", e);
+            Ok(Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json")
+                .body(
+                    json!({
+                        "error": "Failed to send push notification"
+                    })
+                    .to_string()
+                    .into(),
+                )?)
+        }
     }
 }

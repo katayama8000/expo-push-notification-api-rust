@@ -316,6 +316,7 @@ dependencies = [
  "serde_json",
  "supabase_rs",
  "tokio",
+ "tracing",
  "vercel_runtime",
 ]
 
