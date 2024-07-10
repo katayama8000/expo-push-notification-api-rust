@@ -70,8 +70,11 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
         title = json_body["title"].to_string();
         body = json_body["body"].to_string();
         info!("Title: {}", title);
+        println!("Body: {}", body);
         info!("Body: {}", body);
+        println!("Body: {}", body);
         info!("expo_push_token: {:?}", json_body["expo_push_token"]);
+        println!("expo_push_token: {:?}", json_body["expo_push_token"]);
 
         if let Some(token) = json_body["expo_push_token"].as_str() {
             expo_push_tokens.push(token.to_string());
@@ -89,12 +92,14 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
             )?);
     }
 
+    println!("Building push notification");
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
         .body(body)
         .build()
         .map_err(Error::from)?;
 
+    println!("Sending push notification");
     match expo.send_push_notifications(expo_push_message).await {
         Ok(_) => Ok(Response::builder()
             .status(StatusCode::OK)
@@ -107,6 +112,8 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 .into(),
             )?),
         Err(e) => {
+            println!("Failed to send push notification, {:?}", e);
+            eprint!("Failed to send push notification, {:?}", e);
             error!("Failed to send push notification, {:?}", e);
             Ok(Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
