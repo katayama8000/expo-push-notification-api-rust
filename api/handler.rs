@@ -100,7 +100,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
                     )?);
             }
 
-            if let Some(token) = json_body["expo_push_tokens"].as_str() {
+            if let Some(token) = json_body["expo_push_token"].as_str() {
                 if Expo::is_expo_push_token(token) {
                     expo_push_tokens.push(token.to_string());
                 } else {
