@@ -65,9 +65,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     if req.method() == "GET" {
         let supabase_client = initialize_supabase_client().await?;
         expo_push_tokens = fetch_expo_push_tokens(&supabase_client).await?;
-    }
-
-    if req.method() == "POST" {
+    } else if req.method() == "POST" {
         let json_body = extract_body(&req).await?;
         title = json_body["title"].to_string();
         body = json_body["body"].to_string();
@@ -78,6 +76,17 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
         if let Some(token) = json_body["expo_push_token"].as_str() {
             expo_push_tokens.push(token.to_string());
         }
+    } else {
+        return Ok(Response::builder()
+            .status(StatusCode::METHOD_NOT_ALLOWED)
+            .header("Content-Type", "application/json")
+            .body(
+                json!({
+                    "error": "Method not allowed"
+                })
+                .to_string()
+                .into(),
+            )?);
     }
 
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
