@@ -54,7 +54,10 @@ async fn main() -> Result<(), Error> {
 }
 
 pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
-    println!("This is an Expo push notification API");
+    println!(
+        "This is an Expo push notification API ver: {}",
+        env!("CARGO_PKG_VERSION")
+    );
 
     let expo = Expo::new(ExpoClientOptions::default());
 
@@ -73,6 +76,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
             if let Some(t) = json_body["title"].as_str() {
                 title = t.to_string();
             } else {
+                eprintln!("Title is required");
                 return Ok(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .header("Content-Type", "application/json")
@@ -88,6 +92,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
             if let Some(b) = json_body["body"].as_str() {
                 body = b.to_string();
             } else {
+                eprintln!("Body is required");
                 return Ok(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .header("Content-Type", "application/json")
@@ -100,7 +105,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
                     )?);
             }
 
-            if let Some(token) = json_body["expo_push_tokens"].as_str() {
+            if let Some(token) = json_body["expo_push_token"].as_str() {
                 if Expo::is_expo_push_token(token) {
                     expo_push_tokens.push(token.to_string());
                 } else {
