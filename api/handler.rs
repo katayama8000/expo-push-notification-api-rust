@@ -31,6 +31,7 @@ async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, 
         .iter()
         .filter_map(|row| row["expo_push_token"].as_str().map(|s| s.to_string()))
         .collect::<Vec<String>>();
+    println!("Fetched {} expo push tokens", tokens.len());
     Ok(tokens)
 }
 
@@ -43,6 +44,7 @@ async fn extract_body(req: &Request) -> Result<Value, Error> {
         eprintln!("Error parsing JSON body: {:?}", e);
         Error::from(e)
     })?;
+    println!("Extracted body: {:?}", json_body);
     Ok(json_body)
 }
 
@@ -60,44 +62,76 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let mut body = "パートナーに請求しよう".to_string();
     let mut expo_push_tokens = vec![];
 
-    if req.method() == "GET" {
-        let supabase_client = initialize_supabase_client().await?;
-        expo_push_tokens = fetch_expo_push_tokens(&supabase_client).await?;
-    } else if req.method() == "POST" {
-        let json_body = extract_body(&req).await?;
-        title = json_body["title"].to_string();
-        body = json_body["body"].to_string();
-        println!("Title: {}", title);
-        println!("Body: {}", body);
-        println!("expo_push_token: {:?}", json_body["expo_push_tokens"]);
+    match req.method().as_str() {
+        "GET" => {
+            let supabase_client = initialize_supabase_client().await?;
+            expo_push_tokens = fetch_expo_push_tokens(&supabase_client).await?;
+        }
+        "POST" => {
+            let json_body = extract_body(&req).await?;
 
-        if let Some(token) = json_body["expo_push_tokens"].as_str() {
-            if Expo::is_expo_push_token(token) {
-                expo_push_tokens.push(token.to_string());
+            if let Some(t) = json_body["title"].as_str() {
+                title = t.to_string();
             } else {
                 return Ok(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .header("Content-Type", "application/json")
                     .body(
                         json!({
-                            "error": "Invalid expo push token"
+                            "error": "Title is required"
                         })
                         .to_string()
                         .into(),
                     )?);
             }
+
+            if let Some(b) = json_body["body"].as_str() {
+                body = b.to_string();
+            } else {
+                return Ok(Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .header("Content-Type", "application/json")
+                    .body(
+                        json!({
+                            "error": "Body is required"
+                        })
+                        .to_string()
+                        .into(),
+                    )?);
+            }
+
+            if let Some(token) = json_body["expo_push_tokens"].as_str() {
+                if Expo::is_expo_push_token(token) {
+                    expo_push_tokens.push(token.to_string());
+                } else {
+                    return Ok(Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .header("Content-Type", "application/json")
+                        .body(
+                            json!({
+                                "error": "Invalid expo push token"
+                            })
+                            .to_string()
+                            .into(),
+                        )?);
+                }
+            }
+            println!("Title: {}", title);
+            println!("Body: {}", body);
+            println!("expo_push_tokens: {:?}", expo_push_tokens);
         }
-    } else {
-        return Ok(Response::builder()
-            .status(StatusCode::METHOD_NOT_ALLOWED)
-            .header("Content-Type", "application/json")
-            .body(
-                json!({
-                    "error": "Method not allowed"
-                })
-                .to_string()
-                .into(),
-            )?);
+        _ => {
+            return Ok(Response::builder()
+                .status(StatusCode::METHOD_NOT_ALLOWED)
+                .header("Content-Type", "application/json")
+                .body(
+                    json!({
+                        "error": "Method not allowed"
+                    })
+                    .to_string()
+                    .into(),
+                )?);
+        }
     }
 
     println!("Building push notification");
@@ -105,7 +139,10 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
         .title(title)
         .body(body)
         .build()
-        .map_err(Error::from)?;
+        .map_err(|e| {
+            eprintln!("Error building ExpoPushMessage: {:?}", e);
+            Error::from(e)
+        })?;
 
     println!("Sending push notification");
     match expo.send_push_notifications(expo_push_message).await {
@@ -120,7 +157,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 .into(),
             )?),
         Err(e) => {
-            println!("Failed to send push notification, {:?}", e);
+            eprintln!("Failed to send push notification: {:?}", e);
             Ok(Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "application/json")
