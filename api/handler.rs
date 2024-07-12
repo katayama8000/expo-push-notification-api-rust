@@ -73,6 +73,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
             if let Some(t) = json_body["title"].as_str() {
                 title = t.to_string();
             } else {
+                eprintln!("Title is required");
                 return Ok(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .header("Content-Type", "application/json")
@@ -88,6 +89,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
             if let Some(b) = json_body["body"].as_str() {
                 body = b.to_string();
             } else {
+                eprintln!("Body is required");
                 return Ok(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .header("Content-Type", "application/json")
