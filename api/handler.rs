@@ -22,7 +22,7 @@ async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
 }
 
 async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, Error> {
-    let response = client.select("dev_users").execute().await.map_err(|e| {
+    let response = client.select("users").execute().await.map_err(|e| {
         eprintln!("Error fetching dev_users: {:?}", e);
         Error::from(e)
     })?;
@@ -31,7 +31,7 @@ async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, 
         .iter()
         .filter_map(|row| row["expo_push_token"].as_str().map(|s| s.to_string()))
         .collect::<Vec<String>>();
-    println!("Fetched {} expo push tokens", tokens.len());
+    println!("fetched expo push tokens from supabase {:?}", tokens);
     Ok(tokens)
 }
 
@@ -44,7 +44,6 @@ async fn extract_body(req: &Request) -> Result<Value, Error> {
         eprintln!("Error parsing JSON body: {:?}", e);
         Error::from(e)
     })?;
-    println!("Extracted body: {:?}", json_body);
     Ok(json_body)
 }
 
