@@ -55,8 +55,9 @@ async fn main() -> Result<(), Error> {
 pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     println!(
         "This is an Expo push notification API ver: {}",
-        env!("CARGO_PKG_VERSION")
+        env!("CARGO_PKG_VERSION"),
     );
+    println!("Request Headers: {:?}", req.headers());
 
     let expo = Expo::new(ExpoClientOptions::default());
 
