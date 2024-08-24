@@ -67,6 +67,14 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
 
     match req.method().as_str() {
         "GET" => {
+            let request_secret = req
+                .headers()
+                .get("X-Vercel-Cron-Secret")
+                .and_then(|value| value.to_str().ok())
+                .unwrap_or("");
+
+            println!("Request Secret: {}", request_secret);
+
             let supabase_client = initialize_supabase_client().await?;
             expo_push_tokens = fetch_expo_push_tokens(&supabase_client).await?;
         }
