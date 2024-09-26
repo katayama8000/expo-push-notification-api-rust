@@ -151,6 +151,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
         .body(body)
+        .badge(100)
         .build()
         .map_err(|e| {
             eprintln!("Error building ExpoPushMessage: {:?}", e);
