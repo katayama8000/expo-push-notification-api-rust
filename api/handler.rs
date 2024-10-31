@@ -78,7 +78,9 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     );
     println!("Request Headers: {:?}", req.headers());
 
-    let expo = Expo::new(ExpoClientOptions::default());
+    let expo = Expo::new(ExpoClientOptions {
+        access_token: Some(var("EXPO_ACCESS_TOKEN").expect("access_token to be set")),
+    });
 
     let mut title = "25日だよ".to_string();
     let mut body = "パートナーに請求しよう".to_string();
