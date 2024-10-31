@@ -18,7 +18,7 @@ async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
         Error::from(e)
     })?;
 
-    Ok(SupabaseClient::new(supabase_url, supabase_key))
+    Ok(SupabaseClient::new(supabase_url, supabase_key).expect("SupabaseClient to be valid"))
 }
 
 async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, Error> {
