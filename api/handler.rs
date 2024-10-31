@@ -6,19 +6,34 @@ use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use dotenv::dotenv;
 use std::env::var;
 
-async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
+enum SupabaseError {
+    SupabaseError,
+}
+
+impl From<SupabaseError> for Error {
+    fn from(_: SupabaseError) -> Self {
+        Error::from("SupabaseError")
+    }
+}
+
+async fn initialize_supabase_client() -> Result<SupabaseClient, SupabaseError> {
     dotenv().ok();
 
     let supabase_url = var("SUPABASE_URL").map_err(|e| {
         eprintln!("Error loading SUPABASE_URL: {:?}", e);
-        Error::from(e)
+        SupabaseError::SupabaseError
     })?;
     let supabase_key = var("SUPABASE_KEY").map_err(|e| {
         eprintln!("Error loading SUPABASE_KEY: {:?}", e);
-        Error::from(e)
+        SupabaseError::SupabaseError
     })?;
 
-    Ok(SupabaseClient::new(supabase_url, supabase_key).expect("SupabaseClient to be valid"))
+    Ok(
+        SupabaseClient::new(supabase_url, supabase_key).map_err(|e| {
+            eprintln!("Error initializing SupabaseClient: {:?}", e);
+            SupabaseError::SupabaseError
+        })?,
+    )
 }
 
 async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, Error> {
