@@ -6,25 +6,44 @@ use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use dotenv::dotenv;
 use std::env::var;
 
+#[derive(Debug)]
+enum SupabaseError {
+    Initialization,
+    FetchTokens,
+}
+
+impl From<SupabaseError> for Error {
+    fn from(error: SupabaseError) -> Self {
+        match error {
+            SupabaseError::Initialization => Error::from("Failed to initialize SupabaseClient"),
+            SupabaseError::FetchTokens => Error::from("Failed to fetch tokens from Supabase"),
+        }
+    }
+}
+
 async fn initialize_supabase_client() -> Result<SupabaseClient, Error> {
     dotenv().ok();
 
     let supabase_url = var("SUPABASE_URL").map_err(|e| {
         eprintln!("Error loading SUPABASE_URL: {:?}", e);
-        Error::from(e)
+        SupabaseError::Initialization
     })?;
     let supabase_key = var("SUPABASE_KEY").map_err(|e| {
         eprintln!("Error loading SUPABASE_KEY: {:?}", e);
-        Error::from(e)
+        SupabaseError::Initialization
     })?;
 
-    Ok(SupabaseClient::new(supabase_url, supabase_key))
+    let client = SupabaseClient::new(supabase_url, supabase_key).map_err(|e| {
+        eprintln!("Error initializing SupabaseClient: {:?}", e);
+        SupabaseError::Initialization
+    })?;
+    Ok(client)
 }
 
 async fn fetch_expo_push_tokens(client: &SupabaseClient) -> Result<Vec<String>, Error> {
     let response = client.select("users").execute().await.map_err(|e| {
-        eprintln!("Error fetching dev_users: {:?}", e);
-        Error::from(e)
+        eprintln!("Error fetching expo push tokens: {:?}", e);
+        SupabaseError::FetchTokens
     })?;
 
     let tokens = response
