@@ -5,13 +5,13 @@ version = "0.3.2"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.42.0", features = ["macros"] }
-serde_json = { version = "1", features = ["raw_value"] }
+tokio = { version = "1.45.1", features = ["macros"] }
+serde_json = { version = "1.0.140", features = ["raw_value"] }
 vercel_runtime = { version = "1.1.4" }
-expo_push_notification_client = { version = "0.6.0", default-features = false, features = [
+expo_push_notification_client = { version = "1.0.3", default-features = false, features = [
     "rustls-tls",
 ] }
-supabase_rs = "0.4.0"
+supabase_rs = "0.4.2"
 dotenv = "0.15.0"
 tracing = "0.1.41"
 
