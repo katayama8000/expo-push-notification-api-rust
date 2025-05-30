@@ -9,8 +9,5 @@
       "path": "/api/handler",
       "schedule": "0 0 25 * *"
     }
-  ],
-  "github": {
-    "enabled": false
-  }
+  ]
 }
