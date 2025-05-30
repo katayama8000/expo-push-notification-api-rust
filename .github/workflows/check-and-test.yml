@@ -1,0 +1,32 @@
+name: Check and Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    name: Check and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Check code format
+        run: cargo fmt -- --check
+      
+      - name: Lint with clippy
+        run: cargo clippy -- -D warnings
+      
+      - name: Build
+        run: cargo build
+      
+      - name: Run tests
+        run: cargo test
