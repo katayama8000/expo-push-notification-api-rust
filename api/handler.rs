@@ -1,4 +1,4 @@
-use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage};
+use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, RichContent};
 use serde_json::{json, Value};
 use supabase_rs::SupabaseClient;
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
@@ -172,8 +172,11 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
         .body(body)
+        .rich_content(RichContent {
+            image: Some("https://gyazo.com/be4f8cd5c8a61f20367ed40c7d28adc3".to_string()),
+        })
         .build()
-        .map_err(|e| {
+        .map_err(|e: expo_push_notification_client::ValidationError| {
             eprintln!("Error building ExpoPushMessage: {:?}", e);
             Error::from(e)
         })?;
