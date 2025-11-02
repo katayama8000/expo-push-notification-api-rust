@@ -449,7 +449,7 @@ dependencies = [
 [[package]]
 name = "expo_push_notification_client"
 version = "1.0.7"
-source = "git+https://github.com/katayama8000/expo-push-notification-client-rust#e752c72c0e773f480c2e8e60655a053cc78c2823"
+source = "git+https://github.com/katayama8000/expo-push-notification-client-rust?branch=hotfix#ebd6b3d02a366a52d3ca25362bdd26ff7c6cdea9"
 dependencies = [
  "async-compression",
  "regex",
