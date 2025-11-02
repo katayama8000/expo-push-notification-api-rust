@@ -173,7 +173,7 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
         .title(title)
         .body(body)
         .rich_content(RichContent {
-            image: Some("https://gyazo.com/be4f8cd5c8a61f20367ed40c7d28adc3".to_string()),
+            image: Some("https://picsum.photos/200/300".to_string()),
         })
         .build()
         .map_err(|e: expo_push_notification_client::ValidationError| {
