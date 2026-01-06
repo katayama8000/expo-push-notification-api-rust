@@ -172,9 +172,6 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
     let expo_push_message = ExpoPushMessage::builder(expo_push_tokens)
         .title(title)
         .body(body)
-        .rich_content(RichContent {
-            image: Some("https://picsum.photos/200/300".to_string()),
-        })
         .build()
         .map_err(|e: expo_push_notification_client::ValidationError| {
             eprintln!("Error building ExpoPushMessage: {:?}", e);
