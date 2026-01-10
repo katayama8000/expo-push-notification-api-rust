@@ -1,4 +1,4 @@
-use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, RichContent};
+use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage};
 use serde_json::{json, Value};
 use supabase_rs::SupabaseClient;
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
